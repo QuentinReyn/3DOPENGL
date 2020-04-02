@@ -255,13 +255,16 @@
         var background;
         var spaceship;
         var ennemy;
+        var gameover;
         var ennemies = [];
         //var shootSample;
+        var isGameOver = false;
         var shootSampleArray = [];
         var tex;
         var lastTimeRocket = 0;
         var texturesExplosions = [];
         var texEnnemy ;
+        var hasBeenResetOnce = false;
         var actualScore = 0;
 
 
@@ -282,30 +285,34 @@
             spaceship.sendUniformVariables();
             spaceship.draw();
 
+            if(isGameOver) {
+                gl.useProgram(gameover.shader());
+                gameover.sendUniformVariables();
+                gameover.draw();
+            }
             // test pour afficher un splat quand on appuie sur espace
             gl.enable(gl.BLEND); // transparence activ�e
             var ennemiesCount = 0;
-            var xEnnemy = -0.9;
-            var yEnnemy = 0.1;
-            for (ennemiesCount; ennemiesCount < ennemies.length; ennemiesCount++) {
-                if (ennemies[ennemiesCount] != null) {
-                    gl.useProgram(ennemies[ennemiesCount].shader());
-                    ennemies[ennemiesCount].sendUniformVariables();
-                    ennemies[ennemiesCount].draw();
+            if(!isGameOver) {
+                for (ennemiesCount; ennemiesCount < ennemies.length; ennemiesCount++) {
+                    if (ennemies[ennemiesCount] != null) {
+                        gl.useProgram(ennemies[ennemiesCount].shader());
+                        ennemies[ennemiesCount].sendUniformVariables();
+                        ennemies[ennemiesCount].draw();
 
-                    //console.log(ennemies)
-
-                }
-            }
-
-            var countSplat;
-            for (countSplat = 0; countSplat < shootSampleArray.length; countSplat++) {
-                if (shootSampleArray.length != 0) {
-                    gl.useProgram(shootSampleArray[countSplat].shader());
-                    shootSampleArray[countSplat].sendUniformVariables();
-                    shootSampleArray[countSplat].draw();
+                    }
                 }
 
+
+                var countSplat;
+                for (countSplat = 0; countSplat < shootSampleArray.length; countSplat++) {
+                    if (shootSampleArray.length != 0) {
+                        gl.useProgram(shootSampleArray[countSplat].shader());
+                        shootSampleArray[countSplat].sendUniformVariables();
+                        shootSampleArray[countSplat].draw();
+                    }
+
+                }
             }
 
             gl.disable(gl.BLEND); // transparence d�sactiv�e
@@ -387,78 +394,81 @@
         var lastTime = 0;
 
         function animate() {
-            // fonction appel�e � chaque frame, permet d'animer la sc�ne
-            var timeNow = new Date().getTime();
-            if (lastTime != 0) {
-                // anime chacun des objets de la scene
-                // si necessaire (en fonction du temps ecoul�)
-                var elapsed = timeNow - lastTime;
-                spaceship.setParameters(elapsed);
-                background.setParameters(elapsed);
-                for (countSplat = 0; countSplat < shootSampleArray.length; countSplat++) {
-                    if (shootSampleArray.length > 0) {
-                        shootSampleArray[countSplat].setParameters(elapsed);
-                    }
-
-                }
-
-
-
-
-                for (var e = 0; e < ennemies.length; e++) {
-                    if (ennemies[e] != null) {
-                        ennemies[e].setParameters(elapsed);
-
-                    }
-                    //console.log("pos ennemy en x: "+ennemies[0].position[0] + "pos tir x: "+shootSample.position[0] + "pos ennemy en y: "+ennemies[0].position[1] + "pos tir y: "+shootSample.position[1]);
-                }
-                //console.log(ennemies.length);
-
-                var s = spaceship.getBBox(); // boite englobante du vaisseau sur l'écran
-                var x1 = s[0][0];
-                var x2 = s[1][0];
-                var y1 = s[0][1];
-                var y2 = s[1][1];
-                for (var ennemyCount = 0; ennemyCount < ennemies.length; ennemyCount++) {
-                    if (ennemies[ennemyCount] != null) {
-                        if (ennemies[ennemyCount].position[0] < x1 && ennemies[ennemyCount].position[0] > x2 && ennemies[ennemyCount].position[1] > y1 && ennemies[ennemyCount].position[1] < y2) {
-                            console.log("GAME OVER");
+            if(!isGameOver) {
+                // fonction appel�e � chaque frame, permet d'animer la sc�ne
+                var timeNow = new Date().getTime();
+                if (lastTime != 0) {
+                    // anime chacun des objets de la scene
+                    // si necessaire (en fonction du temps ecoul�)
+                    var elapsed = timeNow - lastTime;
+                    spaceship.setParameters(elapsed);
+                    background.setParameters(elapsed);
+                    for (countSplat = 0; countSplat < shootSampleArray.length; countSplat++) {
+                        if (shootSampleArray.length > 0) {
+                            shootSampleArray[countSplat].setParameters(elapsed);
                         }
+
                     }
-                    for (var tirCount = 0; tirCount < shootSampleArray.length; tirCount++) {
+
+
+                    for (var e = 0; e < ennemies.length; e++) {
+                        if (ennemies[e] != null) {
+                            ennemies[e].setParameters(elapsed);
+
+                        }
+                        //console.log("pos ennemy en x: "+ennemies[0].position[0] + "pos tir x: "+shootSample.position[0] + "pos ennemy en y: "+ennemies[0].position[1] + "pos tir y: "+shootSample.position[1]);
+                    }
+                    //console.log(ennemies.length);
+
+                    var s = spaceship.getBBox(); // boite englobante du vaisseau sur l'écran
+                    var x1 = s[0][0];
+                    var x2 = s[1][0];
+                    var y1 = s[0][1];
+                    var y2 = s[1][1];
+                    for (var ennemyCount = 0; ennemyCount < ennemies.length; ennemyCount++) {
                         if (ennemies[ennemyCount] != null) {
-                            if (isCollision(ennemies[ennemyCount], shootSampleArray[tirCount])) {
-                                if (ennemies[ennemyCount].isExploded == false){
-
+                            if (ennemies[ennemyCount].position[0] > x1 && ennemies[ennemyCount].position[0] < x2 && ennemies[ennemyCount].position[1] > y1 && ennemies[ennemyCount].position[1] < y2) {
+                                if (ennemies[ennemyCount].isExploded == false) {
                                     ennemies[ennemyCount].setIsExploded(true);
-
-                                    actualScore++;
-
-                                    setScore(actualScore);
                                     loadExplosion(ennemyCount);
-
-                                    shootSampleArray[tirCount].clear();
-                                    shootSampleArray.shift();
-                                    //ennemies[ennemyCount].clear();
-                                    //ennemies.splice(ennemyCount,1);
+                                    setHealthDmg();
                                 }
-                            } else if (shootSampleArray[tirCount].position[1] > 1.0) {
-                                shootSampleArray[tirCount].clear();
-                                shootSampleArray.shift();
                             }
                         }
-                    }
-                /*    if(ennemies[ennemyCount] != null) { // to remove ennemy if it's position goes after -1.0
+                        for (var tirCount = 0; tirCount < shootSampleArray.length; tirCount++) {
+                            if (ennemies[ennemyCount] != null) {
+                                if (isCollision(ennemies[ennemyCount], shootSampleArray[tirCount])) {
+                                    if (ennemies[ennemyCount].isExploded == false) {
+
+                                        ennemies[ennemyCount].setIsExploded(true);
+
+                                        actualScore++;
+
+                                        setScore(actualScore);
+                                        loadExplosion(ennemyCount);
+
+                                        shootSampleArray[tirCount].clear();
+                                        shootSampleArray.shift();
+                                        //ennemies[ennemyCount].clear();
+                                        //ennemies.splice(ennemyCount,1);
+                                    }
+                                } else if (shootSampleArray[tirCount].position[1] > 1.0) {
+                                    shootSampleArray[tirCount].clear();
+                                    shootSampleArray.shift();
+                                }
+                            }
+                        }
+                        /*    if(ennemies[ennemyCount] != null) { // to remove ennemy if it's position goes after -1.0
                         if(ennemies[ennemyCount].position[1] < -1.0){
                                 ennemies[ennemyCount].clear();
                                 ennemies.splice(ennemyCount,1);
                         }
                     }*/
+                    }
                 }
+                lastTime = timeNow;
+
             }
-            lastTime = timeNow;
-
-
         }
 
         function loadExplosion(ennemyCOunt) {
@@ -470,24 +480,26 @@
             return new Promise(resolve => {
                 var e = 0;
                 const id = setInterval(() => {
-                    if (e < 46) {
-                        //console.log(e)
-                        ennemies[ennemyCount].setTexture(texturesExplosions[e]);
-                        gl.useProgram(ennemies[ennemyCount].shader());
-                        ennemies[ennemyCount].sendUniformVariables();
-                        ennemies[ennemyCount].draw();
-                        e = e + 1;
+                    if(ennemies[ennemyCount]) {
+                        if (e < 46) {
+                            //console.log(e)
+                            ennemies[ennemyCount].setTexture(texturesExplosions[e]);
+                            gl.useProgram(ennemies[ennemyCount].shader());
+                            ennemies[ennemyCount].sendUniformVariables();
+                            ennemies[ennemyCount].draw();
+                            e = e + 1;
 
-                    } else if (e == 46) {
-                        ennemies[ennemyCount].setTexture(texturesExplosions[e]);
-                        gl.useProgram(ennemies[ennemyCount].shader());
-                        ennemies[ennemyCount].sendUniformVariables();
-                        ennemies[ennemyCount].draw();
-                        ennemies[ennemyCount].clear();
-                        ennemies[ennemyCount] = null;
-                        //console.log(ennemies)
-                        clearInterval(id)
-                        resolve(id)
+                        } else if (e == 46) {
+                            ennemies[ennemyCount].setTexture(texturesExplosions[e]);
+                            gl.useProgram(ennemies[ennemyCount].shader());
+                            ennemies[ennemyCount].sendUniformVariables();
+                            ennemies[ennemyCount].draw();
+                            ennemies[ennemyCount].clear();
+                            ennemies[ennemyCount] = null;
+                            //console.log(ennemies)
+                            clearInterval(id)
+                            resolve(id)
+                        }
                     }
 
                 }, 20)
@@ -506,22 +518,6 @@
             }
         }
 
-        function isCollisionBetweenEnnemyAndSpaceship(ennemy,spaceship){
-            var isCollided = false;
-            var ennemyP = ennemy.position;
-            var ennemyR = ennemy.height / 2; // rayon
-            var spaceshipP = spaceship.position;
-            var spaceshipR = spaceship.height / 2; // rayon
-            //console.log("position x du tir: "+ tirP[0]);
-            //console.log("position x de l'ennemy: "+ ennemyP[0]);
-
-            var dist = Math.sqrt(((spaceshipP[0] - ennemyP[0]) * (spaceshipP[0] - ennemyP[0])) + ((spaceshipP[1] - ennemyP[1]) * (spaceshipP[1] - ennemyP[1])));
-            //console.log("dist: "+dist+ "  rayon:"+(tirR+ennemyR));
-            if (dist <= (spaceshipR + ennemyR)) {
-                isCollided = true;
-            }
-            return isCollided;
-        }
 
         function isCollision(ennemy, tir) {
             var isCollided = false;
@@ -538,21 +534,20 @@
 
         var spawnRate = 1000;
 
-        function setScore(score){
-            var canvas = document.getElementById("actualScore");
-            canvas.innerHTML = "Score : "+score;
-        }
+
 
         function loadEnnemies(){
-           return new Promise(resolve=>{
-                setInterval(()=>{
-                    ennemy = new Ennemy(texEnnemy);
-                    var xRandom =  Math.random() * (0.8 - (-0.8)) + (-0.8);
-                    ennemy.setPosition(xRandom,ennemy.position[1],0);
-                    ennemy.setIsExploded(false);
-                    ennemies.push(ennemy);
-                },spawnRate)
-           });
+                return new Promise(resolve => {
+                    setInterval(() => {
+                        if(!isGameOver) {
+                            ennemy = new Ennemy(texEnnemy);
+                            var xRandom = Math.random() * (0.8 - (-0.8)) + (-0.8);
+                            ennemy.setPosition(xRandom, ennemy.position[1], 0);
+                            ennemy.setIsExploded(false);
+                            ennemies.push(ennemy);
+                        }
+                    }, spawnRate)
+                });
         }
 
         function tick() {
@@ -563,6 +558,64 @@
             animate();
         }
 
+        function setScore(score){
+            var canvas = document.getElementById("actualScore");
+            canvas.innerHTML = "Score : "+score;
+        }
+
+        function setHealthDmg(){
+            let health = document.getElementById("health");
+            if((health.value-20) <= 0){
+                health.value -= 20;
+                gameOver();
+            }else{
+                health.value -= 20;
+            }
+        }
+        function addHealthValue(value){
+            let health = document.getElementById("health");
+            health.value += value;
+        }
+
+
+            function reset(){
+                ennemies = [];
+                shootSampleArray = [];
+                lastTimeRocket = 0;
+                texturesExplosions = [];
+                actualScore = 0;
+                ennemiesCount = 0;
+                gameover.clear();
+                spaceship.clear();
+                background.clear();
+                isGameOver = false;
+                hasBeenResetOnce = true;
+                document.getElementById("health").value = 100;
+                webGLStart();
+            }
+
+
+        function gameOver(){
+            gameover = new Splat(initTexture('textures/gameover.png'));
+            gameover.setPosition(0.0,0.0,0);
+            isGameOver = true;
+            spaceship.clear();
+            ennemies = [];
+        }
+
+        function cancel(){
+
+        }
+
+        function toggleStartButton(state){
+            var button = document.getElementById("start");
+            if(state === 'off'){
+                button.disabled = true;
+            }
+            else{
+                button.disabled = false;
+            }
+        }
 
         function webGLStart() {
             // initialisation du canvas et des objets OpenGL
@@ -570,7 +623,9 @@
             var canvas = document.getElementById("SpaceShip");
           //  var ctx = canvas.getContext("2d");
            // ctx.fillStyle = "blue";
-            initGL(canvas);
+            if(!hasBeenResetOnce) {
+                initGL(canvas);
+            }
 
             // test: cr�ation d'une texture
             //var tex = initTexture('textures/missile.png');
@@ -591,10 +646,11 @@
             gl.clearColor(0.5, 0.5, 0.5, 1.0);
 
             // active le test de profondeur
-            gl.enable(gl.DEPTH_TEST);
-
-            // fonction de m�lange utilis�e pour la transparence
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            if(!hasBeenResetOnce) {
+                gl.enable(gl.DEPTH_TEST);
+                // fonction de m�lange utilis�e pour la transparence
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+            }
 
             /* Mouse and keyboard interaction functions */
             //canvas.addEventListener('mousedown', tbMouseDown, true);
@@ -602,10 +658,13 @@
             //canvas.addEventListener('mouseup', tbMouseUp, true);
             document.onkeydown = handleKeyDown;
             document.onkeyup = handleKeyUp;
-
+            setScore(0);
+            toggleStartButton("off");
             // dessine la scene
-            loadEnnemies();
-            tick();
+            if(!hasBeenResetOnce) {
+                loadEnnemies();
+                tick();
+            }
         }
 
 
@@ -640,12 +699,13 @@
 
     <div class="menuAction">
         <div class="actionButtons">
-            <button onclick="webGLStart()">Start</button>
-            <button>Reset</button>
-            <button>Cancel</button>
+            <button onclick="webGLStart()" id="start">Start</button>
+            <button onclick="reset()">Reset</button>
         </div>
         <div class="actualScore" id="actualScore">
-
+        </div>
+        <div class="actualLifes" id="actualLifes">
+            <progress class="health" id="health" value="100" max="100"></progress>
         </div>
     </div>
 </div>
